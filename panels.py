@@ -54,6 +54,11 @@ async def lever_connect_panel(ctx, **kwargs) -> ui.UINode:
     ]
     if connections:
         children.extend([ui.Text("Connected accounts", variant="subtitle"), _connection_rows(connections), ui.Divider()])
+        children.extend([
+            ui.Button("View pipeline health", variant="primary", size="sm", full_width=True,
+                      icon="Target", on_click=ui.Call("__panel__lever_center")),
+            ui.Divider(),
+        ])
     children.extend([_connect_form(), ui.Divider(), _settings_button()])
     return ui.Stack(direction="v", gap=4, align="stretch", children=children)
 
@@ -71,4 +76,41 @@ async def lever_connect_help(ctx, **kwargs) -> ui.UINode:
 
 @ext.panel("lever_center", slot="center", title="Lever", icon="🎯", center_overlay=True)
 async def lever_center_panel(ctx, **kwargs) -> ui.UINode:
-    return ui.Empty(message="Nothing to show here -- this app is managed entirely from the sidebar.", icon="👈")
+    """Post-connect main screen: a recruiting pipeline health snapshot
+    plus flagged stale candidates -- gives a real operational picture
+    instead of the previous empty placeholder."""
+    connections = await h._load_connections(ctx)
+    if not connections:
+        return ui.Empty(message="Connect a Lever account from the sidebar to see it here.", icon="🎯")
+
+    from schemas import PipelineHealthParams
+    conn_id = connections[0].get("id", "")
+    body: list[ui.UINode] = [ui.Text("Pipeline health", variant="subtitle")]
+    result = await h.audit_recruiting_pipeline(ctx, PipelineHealthParams(connection_id=conn_id))
+    if result.success and result.data:
+        r = result.data
+        body.append(ui.Stats(children=[
+            ui.Stat(label="Active", value=str(getattr(r, "active_opportunities", 0))),
+            ui.Stat(label="Archived", value=str(getattr(r, "archived_opportunities", 0))),
+            ui.Stat(label="Stale", value=str(getattr(r, "stale_candidates", 0))),
+        ]))
+        stage_counts = getattr(r, "stage_counts", {}) or {}
+        if stage_counts:
+            body.append(ui.KeyValue(columns=2, items=[
+                {"key": k, "value": str(v)} for k, v in list(stage_counts.items())[:10]
+            ]))
+        findings = getattr(r, "findings", []) or []
+        if findings:
+            body.append(ui.Divider())
+            body.append(ui.Text("Flagged candidates", variant="subtitle"))
+            for f in findings[:15]:
+                color = {"high": "red", "medium": "yellow"}.get(f.severity, "gray")
+                body.append(ui.Stack(direction="h", gap=2, align="center", children=[
+                    ui.Badge(label=f.severity.upper(), color=color),
+                    ui.Text(f.title, variant="body"),
+                    ui.Text(f.detail, variant="caption"),
+                ]))
+    else:
+        body.append(ui.Text("Could not load the pipeline health report.", variant="caption"))
+
+    return ui.Stack(direction="v", gap=3, align="stretch", children=body)
