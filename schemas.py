@@ -216,12 +216,15 @@ class LeverRecord(sdl.Entity):
 
 
 class LeverRecordList(sdl.Entity):
+    id: str = ""
+    title: str = ""
     records: list[LeverRecord] = Field(default_factory=list)
     has_next: bool = False
     next_cursor: str = ""
 
 
 class RecruitingFinding(sdl.Entity):
+    id: str = ""
     severity: str = "info"
     title: str = ""
     detail: str = ""
@@ -229,6 +232,8 @@ class RecruitingFinding(sdl.Entity):
 
 
 class RecruitingHealthReport(sdl.Entity):
+    id: str = ""
+    title: str = ""
     active_opportunities: int = 0
     archived_opportunities: int = 0
     stage_counts: dict[str, int] = Field(default_factory=dict)
