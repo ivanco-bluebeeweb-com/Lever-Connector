@@ -11,8 +11,7 @@ import handlers as h
 
 
 def _settings_button() -> ui.UINode:
-    return ui.Button("App settings", variant="secondary", size="sm", full_width=True,
-                     icon="settings", on_click=ui.Call("__panel__lever_settings"))
+    return ui.Button("App settings", variant="secondary", size="sm", icon="settings", on_click=ui.Call("__panel__lever_settings"))
 
 
 def _connection_rows(connections: list[dict]) -> ui.UINode:
@@ -33,6 +32,9 @@ def _connect_form() -> ui.UINode:
     return ui.Stack(direction="v", gap=3, align="stretch", children=[
         ui.Button("How do I set this up?", variant="ghost", size="sm", icon="HelpCircle",
                   on_click=ui.Call("__panel__lever_connect_help")),
+        ui.Button("Sign in with Lever (OAuth 2.0)", variant="primary", size="sm", icon="login"),
+        ui.Divider(),
+        ui.Text("Or connect via API Key", variant="caption"),
         ui.Form(action="connect_lever", submit_label="Verify and connect", children=[
             ui.Stack(direction="v", gap=1, align="stretch", children=[
                 ui.Text("Lever API key", variant="caption"),
@@ -55,8 +57,7 @@ async def lever_connect_panel(ctx, **kwargs) -> ui.UINode:
     if connections:
         children.extend([ui.Text("Connected accounts", variant="subtitle"), _connection_rows(connections), ui.Divider()])
         children.extend([
-            ui.Button("View pipeline health", variant="primary", size="sm", full_width=True,
-                      icon="Target", on_click=ui.Call("__panel__lever_center")),
+            ui.Button("View pipeline health", variant="primary", size="sm", icon="Target", on_click=ui.Call("__panel__lever_center")),
             ui.Divider(),
         ])
     children.extend([_connect_form(), ui.Divider(), _settings_button()])
